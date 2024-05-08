@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MemoPadServer</title>
+    <link rel="stylesheet" href="css/sample.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+    <script src="https://kit.fontawesome.com/862824129a.js" crossorigin="anonymous"></script>
+</head>
+<body>
+    
+    <header>
+        <h1><i class="fa-solid fa-mountain-sun" style="color: #74C0FC;"></i>バタフライメモリー</h1>
+    </header>
+
+    <main>
+        
+            <p>①下記をクリックして名前<br><span class="span">同じ蝶々には番号入れたほうがいいよ</span></p>
+            <input class="name" type="text" id="name">
+            <select name="" calss="sex" id="sex">
+                <option value="" hidden>②雌雄選択</option>
+                <option value="雄">雄</option>
+                <option value="雌">雌</option>
+                <option value="不明">不明</option>
+                <option value="雌雄胴体">雌雄胴体</option>
+            </select>
+        
+            <button class="positionBtn" onclick="test()">③位置情報取得</button>
+            <p>iPhoneの時は<br><span class="span">safariの位置情報サービスをON</span>にしてね</p>
+            <div class="position">
+                <div class="latitude">緯度：<span id="latitude" value="lati"></span></div>
+                <div class="longitude">経度：<span id="longitude" value="longi"></span></div>
+            </div>
+
+            <div>
+                
+                <div class="view" id="view" style="overflow: auto;height: 250px;">
+                <p>天候情報</p>
+
+                </div>
+            </div>            
+            <!-- img登録 -->
+            <form action="" method="POST" enctype="multipart/form-data">
+                <div class="upload-area"> 
+                    <!--下記は雲イラスト  -->
+                    <p>④<i class="fas fa-cloud-upload-alt"></i>下記をclickかD&Dで写真！</p>
+                    <input class="img" type="file" name="upload_file" id="input-files">
+                </div>
+            
+            </form>
+        
+            <textarea id="comment" placeholder="⑤採集状況　簡単な場所など"></textarea>
+            <ul>
+                <li id="save">上記を<span class="span">Save</span></li>
+                <li id="clear">全てを<span class="span">Clear</span></li>
+            </ul>
+        
+            <!-- 任意のデータのみを消すよう -->
+        <div class="dataDeleteBox">
+            <p class="" for="">任意のデータを消したいときは下から選んでね</p>
+            <div class="dataDelete">
+                <select id="dataSelect" >
+                    <option value="" hidden>名前を選択</option>
+                    <!-- キーの選択肢はJavaScriptで動的に生成する -->
+                </select>
+                <button class=deleat id="delete">選んだデータをDelete</button>
+            </div>
+        </div>
+
+        
+    </main>
+
+    <div id="output" style="overflow: auto; height: 300px;">
+    <table>
+        <thead>
+            <tr>
+                <th class="short">Key</th>
+                <th class="short">Name</th>
+                <th class="veryShort">Sex</th>
+                <th class="short">Area</th>
+                <th class="short">Coordinates</th>
+                <th class="short">Weather Description</th>
+                <!-- <th class="veryShort">Icon</th> -->
+                <th class="short">Temperature</th>
+                <th class="short">Wind Speed</th>
+                <th class="short">Humidity</th>
+                <th>Image</th>
+                <th>Comment</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody id="list">
+            <!-- データがここに挿入されます -->
+        </tbody>
+    </table>
+    </div>
+    <!-- 日付でソート -->
+    <div class="filterBox1">
+        <p for="">日付でソート！</p>
+        <div class="filterBox2">
+            <input class="dateChoice" type="date" name="" id="dateChoice">
+            <button class="filter" id="filterDate">フィルタ</button>
+        </div>
+        <div id="filteredResults"></div>      
+    </div>
+
+<!-- 日付でソート -->
+    <!-- <div class="searchBox1">
+        <p for="">名前で検索！</p>
+        <div class="searchBox2">
+            <input class="searchName" type="" name="" id="searchName">
+            <button class="search" id="search">検索！</button>
+        </div>
+        <div id="searchResults"></div>      
+    </div>
+     -->
+
+<script>
+// 位置情報取得
+function test() {
+    navigator.geolocation.getCurrentPosition(test2);
+}
+
+function test2(position) {
+    const lati =  position.coords.latitude;
+    const longi =  position.coords.longitude;
+    console.log(lati);
+    console.log(longi);
+
+    $("#latitude").text(lati);
+    $("#longitude").text(longi);
+
+//＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+//MAP表示処理
+//＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+const key   = "9791306e542ff7bb5de08402ca917b9a";  //***自分のKEYを！！！！！！！！！！！！！！！***
+// const lat   = $("#latitude").val(lati);   //取得した緯度を使用するため必要なし
+// const lon   = $("#longitude").val(longi);  //取得した経度を使用するため必要なし
+const icon  = "https://openweathermap.org/img/wn/"
+
+//OpenWeatherAPI（天気情報を取得）現在時刻の情報を取得
+const url = 'https://api.openweathermap.org/data/2.5/weather?lat='+lati+'&lon='+longi+'&appid='+key+'&lang=ja';
+
+
+$.ajax({
+    url:url,
+    type:'get',
+    cache:false,
+    dataType:'json'
+}).done(function(data){
+    // console.log(data.list[0].dt_txt);//オブジェクト変数を確認
+    console.log(data);//オブジェクト変数を確認
+
+    
+    let html = `
+            <div> 
+                <div class="AWI">
+                    <div id="area">エリア：${data.name}</div>
+                    <div id="Wdescription">天気：${data.weather[0].description}</div>
+                    <div><img id="icon" src="${icon+data.weather[0].icon}@2x.png"></div>
+                </div>
+                <div class="KWH">
+                    <div id="K">気温：${data.main.temp}K</div>
+                    <div id="Wspeed">風速：${data.wind.speed}m/s</div>
+                    <div id="humidity">湿気：${data.main.humidity}%</div>
+                </div>
+            </div>
+        `;    
+    
+    $("#view").html(html);
+    // $("#area").html(data.city.name);
+});
+};
+
+// 日付取得
+let date = new Date();
+console.log(date);
+
+
+
+
+
+</script>
+
+
+
+<!-- ここからfirebase関係 -->
+<script type="module">
+    // Import the functions you need from the SDKs you need
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
+    import { getDatabase, ref, push, set, onChildAdded, remove, onChildRemoved } 
+    from "https://www.gstatic.com/firebasejs/10.11.1/firebase-database.js";
+    import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-storage.js";
+
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+        apiKey: "AIzaSyADZXapjuRCMDGTXQGWwPaDi6UJnTj0FlY",
+        authDomain: "gsmemo-5dec7.firebaseapp.com",
+        projectId: "gsmemo-5dec7",
+        storageBucket: "gsmemo-5dec7.appspot.com",
+        messagingSenderId: "823145330668",
+        appId: "1:823145330668:web:b6031f7ddd4ffbbde072c9"
+    };
+    
+    // 画像ファイルのアップロード
+    $("#input-files").on("change", function(e) {
+        const file = e.target.files[0];
+        const storageRef = sRef(storage, 'images/' + file.name); // 'images/'は任意のパス
+
+        uploadBytes(storageRef, file).then((snapshot) => {
+            console.log('Uploaded a blob or file!');
+        });
+    });
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const storage = getStorage(app);
+    const dbRef = ref(db, "memoServer"); // ここはあなたのデータベース参照に合わせてください
+
+    // saveBtnを押した時の機能
+    $("#save").on("click", async function(){
+        let imageUrl = "";
+        if (document.getElementById('input-files').files.length > 0) {
+            const file = document.getElementById('input-files').files[0];
+            const storageRef = sRef(storage, 'images/' + file.name);
+            try{
+                const snapshot = await uploadBytes(storageRef, file);
+                imageUrl = await getDownloadURL(snapshot.ref);
+            } catch (error) {
+                console.error('Error uploading file and getting download URL', error);
+            }
+        }
+
+
+
+        const msg = {
+            name: $("#name").val(),
+            sex: $("#sex").val(),
+            area: $("#area").text(), 
+            latitude: $("#latitude").text(), 
+            longitude: $("#longitude").text(), 
+            Wdescription: $("#Wdescription").text(), 
+            // icon: $("#icon").attr('src'), 
+            temp: $("#K").text(), 
+            Wspeed: $("#Wspeed").text(), 
+            humidity: $("#humidity").text(), 
+            imageUrl: imageUrl,
+            comment: $("#comment").val(),
+            date: new Date().toString()
+        };
+
+        const newEntry = push(dbRef);
+        set(newEntry, msg);
+    });   
+
+    onChildAdded(dbRef,function(data){
+        const msg = data.val();//ここでデータ取得
+        // const key = data.key; 
+        let html = `
+                <tr id="row-${data.key}">
+                    <td class="key">${data.key}</td>
+                    <td>${msg.name}</td>
+                    <td>${msg.sex}</td>
+                    <td>${msg.area}</td>
+                    <td>${msg.latitude}, ${msg.longitude}</td>
+                    <td>${msg.Wdescription}</td>
+                    <td>${msg.temp}</td>
+                    <td>${msg.Wspeed}</td>
+                    <td>${msg.humidity}</td>
+                    <td class="imageUrl"><img src="${msg.imageUrl}" alt="Uploaded image"></td>
+                    <td>${msg.comment}</td>
+                    <td class="Date">${msg.date}</td>
+                </tr>
+            `;
+            $("#list").append(html);
+            $("#output").scrollTop($("#output")[0].scrollHeight);
+    });
+    
+
+
+
+$("#clear").on("click", function() {
+    // ユーザーに確認を取る
+    if (confirm("バタフライメモリーを消しますか？元に戻りませんよ？")) {
+        const dbRef = ref(db, "memoServer"); // memoServerを参照
+
+        // memoServer データを全削除
+        set(dbRef, null).then(() => {
+            // HTML上のリストもクリア
+            $("#list").empty();
+            alert("データが全て削除されました。");
+        // }).catch(error => {
+        //     console.error("Error deleting data: ", error);
+        });
+    }else{
+        // cancelなので記載しない
+    }
+});
+
+// 任意のデータのみ消す
+onChildAdded(dbRef, (snapshot) => {
+        const key = snapshot.key;
+        const data = snapshot.val();
+        const option = `<option value="${key}">${data.name} (${key})</option>`;
+        $("#dataSelect").append(option);
+    });
+
+$("#delete").on("click", function() {
+        const selectedKey = $("#dataSelect").val();
+        if (confirm("削除しますか？")) {
+            const itemRef = ref(db, `memoServer/${selectedKey}`);
+            remove(itemRef).then(() => {
+                $("#dataSelect option[value='" + selectedKey + "']").remove();
+                $(`#row-${selectedKey}`).remove(); // HTMLから行を削除
+            }).catch(error => {
+                console.error("Error deleting data: ", error);
+            });
+        }else{
+
+        }
+    });
+
+$("#filterDate").on("click", function() {
+    const chosenDate = $("#dateChoice").val(); // 選択した日付を取得
+    const formattedDate = new Date(chosenDate).toDateString(); // 日付を整形
+
+    // 新しいテーブルのセットアップ
+    $("#filteredResults").html(`
+        <table>
+            <thead>
+                <tr>
+                    <th class="short">Key</th>
+                    <th class="short">Name</th>
+                    <th class="veryShort">Sex</th>
+                    <th class="short">Area</th>
+                    <th class="short">Coordinates</th>
+                    <th class="short">Weather Description</th>
+                    <!-- <th class="veryShort">Icon</th> -->
+                    <th class="short">Temperature</th>
+                    <th class="short">Wind Speed</th>
+                    <th class="short">Humidity</th>
+                    <th>Image</th>
+                    <th>Comment</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody id="filtered-list"></tbody>
+        </table>
+    `);
+
+    // 日付に基づいてデータをフィルタリング
+    onChildAdded(dbRef, (snapshot) => {
+        const data = snapshot.val();
+        const dataDate = new Date(data.date).toDateString(); // データの日付を整形
+
+        if (dataDate === formattedDate) { // フィルタ条件に一致する場合のみ表示
+            const html = `
+                <tr>
+                    <td>${snapshot.key}</td>
+                    <td>${data.name}</td>
+                    <td>${data.sex}</td>
+                    <td>${data.area}</td>
+                    <td>${data.latitude}, ${data.longitude}</td>
+                    <td>${data.Wdescription}</td>
+                    <td>${data.temp}</td>
+                    <td>${data.Wspeed}</td>
+                    <td>${data.humidity}</td>
+                    <td class="imageUrl"><img src="${data.imageUrl}" alt="Uploaded image"></td>
+                    <td>${data.comment}</td>
+                    <td class="Date">${data.date}</td>
+                </tr>
+            `;
+            $("#filtered-list").append(html);
+        }
+    });
+});
+// 名前検索
+// $("#search").on("click", function() {
+//         // 入力された検索キーワードを取得
+//         const getSearchName = $("#searchName").val().trim();
+
+//         // クエリを使って `name` フィールドが検索キーワードに一致する項目を取得
+//         const dbRef = ref(db, "memoServer");
+//         const searchQuery = query(dbRef, orderByChild("name"), equalTo(getSearchName));
+
+
+</script>    
+<footer><small>    <i class="fa-solid fa-globe" style="color: #c11f96;"></i>
+</small></footer>
+</body>
+</html>
