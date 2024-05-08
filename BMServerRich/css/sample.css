@@ -129,7 +129,7 @@ table{
     justify-content: space-evenly;
     margin-bottom: 5px;
 }
-.dateChoice, .searchName{
+.dateChoice, .searchName, .choose{
     font-size: 70%;
     border: 2px solid;
     outline-offset: 2px;
