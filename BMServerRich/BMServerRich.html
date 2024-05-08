@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="css/sample.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
     <script src="https://kit.fontawesome.com/862824129a.js" crossorigin="anonymous"></script>
+    
 </head>
 <body>
     
@@ -105,16 +106,16 @@
         <div id="filteredResults"></div>      
     </div>
 
-<!-- 日付でソート -->
-    <!-- <div class="searchBox1">
-        <p for="">名前で検索！</p>
+<!-- 名前でサーチ -->
+    <div class="searchBox1">
+        <p for="">名前で検索！<span class="iiwake">(完全一致のみ)</span></p>
         <div class="searchBox2">
             <input class="searchName" type="" name="" id="searchName">
             <button class="search" id="search">検索！</button>
         </div>
         <div id="searchResults"></div>      
     </div>
-     -->
+    
 
 <script>
 // 位置情報取得
@@ -189,7 +190,7 @@ console.log(date);
 <script type="module">
     // Import the functions you need from the SDKs you need
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
-    import { getDatabase, ref, push, set, onChildAdded, remove, onChildRemoved } 
+    import { getDatabase, ref, push, set, onChildAdded, remove, onChildRemoved, query, orderByChild, equalTo } 
     from "https://www.gstatic.com/firebasejs/10.11.1/firebase-database.js";
     import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-storage.js";
 
@@ -203,7 +204,7 @@ console.log(date);
         appId: "1:823145330668:web:b6031f7ddd4ffbbde072c9"
     };
     
-    // 画像ファイルのアップロード
+    // 画像ファイルのアップロード準備
     $("#input-files").on("change", function(e) {
         const file = e.target.files[0];
         const storageRef = sRef(storage, 'images/' + file.name); // 'images/'は任意のパス
@@ -234,7 +235,7 @@ console.log(date);
 
 
 
-        const msg = {
+         const msg = {
             name: $("#name").val(),
             sex: $("#sex").val(),
             area: $("#area").text(), 
@@ -304,7 +305,7 @@ onChildAdded(dbRef, (snapshot) => {
         const data = snapshot.val();
         const option = `<option value="${key}">${data.name} (${key})</option>`;
         $("#dataSelect").append(option);
-    });
+});
 
 $("#delete").on("click", function() {
         const selectedKey = $("#dataSelect").val();
@@ -319,17 +320,19 @@ $("#delete").on("click", function() {
         }else{
 
         }
-    });
+});
 
+// 日付でソート
 $("#filterDate").on("click", function() {
     const chosenDate = $("#dateChoice").val(); // 選択した日付を取得
     const formattedDate = new Date(chosenDate).toDateString(); // 日付を整形
 
     // 新しいテーブルのセットアップ
     $("#filteredResults").html(`
+    <div id="output" style="overflow: auto; height: 300px;">
         <table>
             <thead>
-                <tr>
+                <tr class="sticky">
                     <th class="short">Key</th>
                     <th class="short">Name</th>
                     <th class="veryShort">Sex</th>
@@ -347,6 +350,7 @@ $("#filterDate").on("click", function() {
             </thead>
             <tbody id="filtered-list"></tbody>
         </table>
+    </div>
     `);
 
     // 日付に基づいてデータをフィルタリング
@@ -375,16 +379,93 @@ $("#filterDate").on("click", function() {
         }
     });
 });
+
 // 名前検索
-// $("#search").on("click", function() {
-//         // 入力された検索キーワードを取得
-//         const getSearchName = $("#searchName").val().trim();
+$("#search").on("click", function() {
+        // searchNameに入力したワードをgetSearchNameに与える
+        const getSearchName = $("#searchName").val().trim();
+        const dbRef = ref(db, "memoServer");
+        // dbRef内のカラムnameにgetSearchNameに与えれたワードがある場合、searchQueryに与える
+        // equalToでは完全一致のみ
+        const searchQuery = query(dbRef, orderByChild("name"), equalTo(getSearchName));
+        
+    $("#searchResults").html(`
+    <div id="output" style="overflow: auto; height: 300px;">
+        <table>
+            <thead>
+                <tr>
+                    <th class="short">Key</th>
+                    <th class="short">Name</th>
+                    <th class="veryShort">Sex</th>
+                    <th class="short">Area</th>
+                    <th class="short">Coordinates</th>
+                    <th class="short">Weather Description</th>
+                    <!-- <th class="veryShort">Icon</th> -->
+                    <th class="short">Temperature</th>
+                    <th class="short">Wind Speed</th>
+                    <th class="short">Humidity</th>
+                    <th>Image</th>
+                    <th>Comment</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody id="search-list"></tbody>
+        </table>
+    </div>
+    `);
 
-//         // クエリを使って `name` フィールドが検索キーワードに一致する項目を取得
-//         const dbRef = ref(db, "memoServer");
-//         const searchQuery = query(dbRef, orderByChild("name"), equalTo(getSearchName));
+    // onChildAdded(dbRef, (searchQuery) => {
+    //     const data = searchQuery.val();
+    //     // const dataDate = new Date(data.date).toDateString(); // データの日付を整形
+
+    //     // if () { 
+    //         const html = `
+    //             <tr>
+    //                 <td>${searchQuery.key}</td>
+    //                 <td>${data.name}</td>
+    //                 <td>${data.sex}</td>
+    //                 <td>${data.area}</td>
+    //                 <td>${data.latitude}, ${data.longitude}</td>
+    //                 <td>${data.Wdescription}</td>
+    //                 <td>${data.temp}</td>
+    //                 <td>${data.Wspeed}</td>
+    //                 <td>${data.humidity}</td>
+    //                 <td class="imageUrl"><img src="${data.imageUrl}" alt="Uploaded image"></td>
+    //                 <td>${data.comment}</td>
+    //                 <td class="Date">${data.date}</td>
+    //             </tr>
+    //         `;
+    //         $("#search-list").append(html);
+    //     // }
+    // });
+
+    onChildAdded(searchQuery, function(snapshot) {
+        const data = snapshot.val();
+        // const dataDate = new Date(data.date).toDateString(); // データの日付を整形
+
+        // if () { 
+            const html = `
+                <tr>
+                    <td>${snapshot.key}</td>
+                    <td>${data.name}</td>
+                    <td>${data.sex}</td>
+                    <td>${data.area}</td>
+                    <td>${data.latitude}, ${data.longitude}</td>
+                    <td>${data.Wdescription}</td>
+                    <td>${data.temp}</td>
+                    <td>${data.Wspeed}</td>
+                    <td>${data.humidity}</td>
+                    <td class="imageUrl"><img src="${data.imageUrl}" alt="Uploaded image"></td>
+                    <td>${data.comment}</td>
+                    <td class="Date">${data.date}</td>
+                </tr>
+            `;
+            $("#search-list").append(html);
+        // }
+    });
 
 
+});
 </script>    
 <footer><small>    <i class="fa-solid fa-globe" style="color: #c11f96;"></i>
 </small></footer>

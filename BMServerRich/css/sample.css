@@ -1,14 +1,17 @@
+
 body{
     margin:0;
     padding:0;
     text-align:left;
     font-size: 32px;
     width:100%;
+    -webkit-text-size-adjust: 100%;/*  おまじない */
 }
 header{
     background-color: #fff;
     border-bottom: 1px solid #ccc;
     text-align: center;
+
 }
 h1{
     font-size: 100%;
@@ -60,6 +63,7 @@ table{
     } */
     thead th {
         position: sticky;
+        position: -webkit-sticky;
         top: 0;
         background-color: #1bd4f0;
     }
@@ -115,25 +119,26 @@ table{
 
 }
 
-.filterBox1{
+.filterBox1, .searchBox1{
     margin: 3px 0;
     border: 2px solid ;
 }
 
-.filterBox2{
+.filterBox2, .searchBox2{
     display: flex;
     justify-content: space-evenly;
     margin-bottom: 5px;
 }
-.dateChoice{
+.dateChoice, .searchName{
     font-size: 70%;
     border: 2px solid;
     outline-offset: 2px;
     height: 30px;
-    border: auto;
+    width: 30%;
+    /* border: auto; */
     
 }
-.filter{
+.filter, .search{
     display: block;
     text-align: center;
     width: 30%;
@@ -155,6 +160,9 @@ p{
     border-bottom:1px solid #fff;
     height:7%;
     Margin : 0 0 0 3%;
+}
+.iiwake{
+    font-size: 40%;
 }
 ul{
     padding: 0;
